@@ -14,11 +14,11 @@
 #include <functional>
 #include <numeric>
 #include <random>
-#include <thread>  // NOLINT
+#include <thread> // NOLINT
 
 #include "common/exception.h"
-#include "gtest/gtest.h"
 #include "primer/p0_trie.h"
+#include "gtest/gtest.h"
 
 namespace bustub {
 
@@ -41,7 +41,7 @@ std::vector<std::string> GenerateNRandomString(int n) {
   return rand_strs;
 }
 
-TEST(StarterTest, DISABLED_TrieNodeInsertTest) {
+TEST(StarterTest, TrieNodeInsertTest) {
   // Test Insert
   //  When same key is inserted twice, insert should return nullptr
   // When inserted key and unique_ptr's key does not match, return nullptr
@@ -60,9 +60,10 @@ TEST(StarterTest, DISABLED_TrieNodeInsertTest) {
   EXPECT_EQ((*child_node)->GetKeyChar(), 'c');
 }
 
-TEST(StarterTest, DISABLED_TrieNodeRemoveTest) {
+TEST(StarterTest, TrieNodeRemoveTest) {
   auto t = TrieNode('a');
-  __attribute__((unused)) auto child_node = t.InsertChildNode('b', std::make_unique<TrieNode>('b'));
+  __attribute__((unused)) auto child_node =
+      t.InsertChildNode('b', std::make_unique<TrieNode>('b'));
   child_node = t.InsertChildNode('c', std::make_unique<TrieNode>('c'));
 
   t.RemoveChildNode('b');
@@ -199,4 +200,4 @@ TEST(StarterTrieTest, DISABLED_ConcurrentTest1) {
   threads.clear();
 }
 
-}  // namespace bustub
+} // namespace bustub
