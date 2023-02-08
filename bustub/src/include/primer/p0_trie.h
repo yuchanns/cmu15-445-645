@@ -51,8 +51,9 @@ public:
    * @param other_trie_node Old trie node.
    */
   TrieNode(TrieNode &&other_trie_node) noexcept {
-    TrieNode trie_node = std::move(other_trie_node);
-    children_[trie_node.key_char_] = std::unique_ptr<TrieNode>(&trie_node);
+    key_char_ = other_trie_node.key_char_;
+    is_end_ = false;
+    children_.merge(other_trie_node.children_);
   }
 
   /**
@@ -261,17 +262,38 @@ private:
   /* Read-write lock for the trie */
   ReaderWriterLatch latch_;
 
+  TrieNode *GetNodeWithLen(const std::string &key, int len, bool insert) {
+    int key_len = key.length();
+    if (len > key_len) {
+      len = key_len;
+    }
+    TrieNode *node = root_.get();
+    for (int i = 0; i < len; i++) {
+      char key_char = key[i];
+      if (node->HasChild(key_char)) {
+        node = node->GetChildNode(key_char)->get();
+      } else if (!insert) {
+        return nullptr;
+      } else {
+        node = node->InsertChildNode(key_char,
+                                     std::make_unique<TrieNode>(key_char))
+                   ->get();
+      }
+    }
+    return node;
+  };
+
 public:
   /**
-   * TODO(P0): Add implementation
+   * DONE(P0): Add implementation
    *
    * @brief Construct a new Trie object. Initialize the root node with '\0'
    * character.
    */
-  Trie() = default;
+  Trie() { root_ = std::make_unique<TrieNode>('\0'); }
 
   /**
-   * TODO(P0): Add implementation
+   * DONE(P0): Add implementation
    *
    * @brief Insert key-value pair into the trie.
    *
@@ -298,6 +320,34 @@ public:
    * @return True if insertion succeeds, false if the key already exists
    */
   template <typename T> bool Insert(const std::string &key, T value) {
+    if (key.empty()) {
+      return false;
+    }
+    int key_len = key.length();
+    TrieNode *node = GetNodeWithLen(key, key_len - 1, true);
+    char ending_char = key[key_len - 1];
+    // 1. TrieNode with this ending character does not exist, create new
+    // TrieNodeWithValue and add it to parent node's children_ map.
+    if (!node->HasChild(ending_char)) {
+      node->InsertChildNode(ending_char, std::make_unique<TrieNodeWithValue<T>>(
+                                             ending_char, value))
+          ->get();
+      return true;
+    }
+    TrieNode *parent_node = node;
+    node = parent_node->GetChildNode(ending_char)->get();
+    // 2. The terminal node is a TrieNode, then convert it into
+    // TrieNodeWithValue by invoking the appropriate constructor
+    if (dynamic_cast<TrieNodeWithValue<T> *>(node) == nullptr) {
+      std::unique_ptr<TrieNodeWithValue<T>> node_with_value =
+          std::make_unique<TrieNodeWithValue<T>>(std::move(*node), value);
+      parent_node->RemoveChildNode(ending_char);
+      parent_node->InsertChildNode(ending_char, std::move(node_with_value));
+      return true;
+    }
+    // 3. It is already a TrieNodeWithValue,
+    // then insertion fails and returns false. Do not overwrite existing data
+    // with new data.
     return false;
   }
 
@@ -318,10 +368,35 @@ public:
    * @param key Key used to traverse the trie and find the correct node
    * @return True if the key exists and is removed, false otherwise
    */
-  bool Remove(const std::string &key) { return false; }
+  bool Remove(const std::string &key) {
+    if (key.empty()) {
+      return false;
+    }
+    int key_len = key.length();
+    TrieNode *node = GetNodeWithLen(key, key_len - 1, false);
+    char ending_char = key[key_len - 1];
+    if (node == nullptr || !node->HasChild(ending_char)) {
+      return false;
+    }
+    TrieNode *parent_node = node;
+    node = node->GetChildNode(ending_char)->get();
+    if (!node->IsEndNode()) {
+      return false;
+    }
+    node->SetEndNode(false);
+    if (node->HasChildren()) {
+      std::unique_ptr<TrieNode> ptr =
+          std::make_unique<TrieNode>(std::move(*node));
+      parent_node->RemoveChildNode(ending_char);
+      parent_node->InsertChildNode(ending_char, std::move(ptr));
+    } else {
+      parent_node->RemoveChildNode(ending_char);
+    }
+    return true;
+  }
 
   /**
-   * TODO(P0): Add implementation
+   * DONE(P0): Add implementation
    *
    * @brief Get the corresponding value of type T given its key.
    * If key is empty, set success to false.
@@ -340,7 +415,16 @@ public:
    */
   template <typename T> T GetValue(const std::string &key, bool *success) {
     *success = false;
-    return {};
+    if (key.empty()) {
+      return {};
+    }
+    TrieNode *node = GetNodeWithLen(key, key.length(), false);
+    TrieNodeWithValue<T> *ptr = dynamic_cast<TrieNodeWithValue<T> *>(node);
+    if (ptr == nullptr) {
+      return {};
+    }
+    *success = true;
+    return ptr->GetValue();
   }
 };
 } // namespace bustub
