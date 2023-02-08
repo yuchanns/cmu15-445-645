@@ -193,7 +193,7 @@ private:
 
 public:
   /**
-   * TODO(P0): Add implementation
+   * DONE(P0): Add implementation
    *
    * @brief Construct a new TrieNodeWithValue object from a TrieNode object and
    * specify its value. This is used when a non-terminal TrieNode is converted
@@ -212,10 +212,14 @@ public:
    * @param trieNode TrieNode whose data is to be moved to TrieNodeWithValue
    * @param value
    */
-  TrieNodeWithValue(TrieNode &&trieNode, T value) {}
+  TrieNodeWithValue(TrieNode &&trieNode, T value)
+      : TrieNode(std::move(trieNode)) {
+    value_ = value;
+    is_end_ = true;
+  }
 
   /**
-   * TODO(P0): Add implementation
+   * DONE(P0): Add implementation
    *
    * @brief Construct a new TrieNodeWithValue. This is used when a new terminal
    * node is constructed.
@@ -228,7 +232,10 @@ public:
    * @param key_char Key char of this node
    * @param value Value of this node
    */
-  TrieNodeWithValue(char key_char, T value) {}
+  TrieNodeWithValue(char key_char, T value) : TrieNode(key_char) {
+    value_ = value;
+    is_end_ = true;
+  }
 
   /**
    * @brief Destroy the Trie Node With Value object
