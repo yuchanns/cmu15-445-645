@@ -323,6 +323,7 @@ public:
     if (key.empty()) {
       return false;
     }
+    latch_.WLock();
     int key_len = key.length();
     TrieNode *node = GetNodeWithLen(key, key_len - 1, true);
     char ending_char = key[key_len - 1];
@@ -332,6 +333,7 @@ public:
       node->InsertChildNode(ending_char, std::make_unique<TrieNodeWithValue<T>>(
                                              ending_char, value))
           ->get();
+      latch_.WUnlock();
       return true;
     }
     TrieNode *parent_node = node;
@@ -343,16 +345,18 @@ public:
           std::make_unique<TrieNodeWithValue<T>>(std::move(*node), value);
       parent_node->RemoveChildNode(ending_char);
       parent_node->InsertChildNode(ending_char, std::move(node_with_value));
+      latch_.WUnlock();
       return true;
     }
     // 3. It is already a TrieNodeWithValue,
     // then insertion fails and returns false. Do not overwrite existing data
     // with new data.
+    latch_.WUnlock();
     return false;
   }
 
   /**
-   * TODO(P0): Add implementation
+   * DONE(P0): Add implementation
    *
    * @brief Remove key value pair from the trie.
    * This function should also remove nodes that are no longer part of another
@@ -372,26 +376,27 @@ public:
     if (key.empty()) {
       return false;
     }
+    latch_.WLock();
     int key_len = key.length();
     TrieNode *node = GetNodeWithLen(key, key_len - 1, false);
     char ending_char = key[key_len - 1];
     if (node == nullptr || !node->HasChild(ending_char)) {
+      latch_.WUnlock();
       return false;
     }
     TrieNode *parent_node = node;
     node = node->GetChildNode(ending_char)->get();
     if (!node->IsEndNode()) {
+      latch_.WUnlock();
       return false;
     }
-    node->SetEndNode(false);
-    if (node->HasChildren()) {
-      std::unique_ptr<TrieNode> ptr =
-          std::make_unique<TrieNode>(std::move(*node));
-      parent_node->RemoveChildNode(ending_char);
+    std::unique_ptr<TrieNode> ptr =
+        std::make_unique<TrieNode>(std::move(*node));
+    parent_node->RemoveChildNode(ending_char);
+    if (ptr->HasChildren()) {
       parent_node->InsertChildNode(ending_char, std::move(ptr));
-    } else {
-      parent_node->RemoveChildNode(ending_char);
     }
+    latch_.WUnlock();
     return true;
   }
 
@@ -418,13 +423,17 @@ public:
     if (key.empty()) {
       return {};
     }
+    latch_.RLock();
     TrieNode *node = GetNodeWithLen(key, key.length(), false);
     TrieNodeWithValue<T> *ptr = dynamic_cast<TrieNodeWithValue<T> *>(node);
     if (ptr == nullptr) {
+      latch_.RUnlock();
       return {};
     }
     *success = true;
-    return ptr->GetValue();
+    T value = ptr->GetValue();
+    latch_.RUnlock();
+    return value;
   }
 };
 } // namespace bustub
