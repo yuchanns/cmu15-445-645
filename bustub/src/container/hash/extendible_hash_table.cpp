@@ -49,7 +49,8 @@ auto ExtendibleHashTable<K, V>::GetLocalDepth(int dir_index) const -> int {
 }
 
 template <typename K, typename V>
-auto ExtendibleHashTable<K, V>::GetLocalDepthInternal(int dir_index) const -> int {
+auto ExtendibleHashTable<K, V>::GetLocalDepthInternal(int dir_index) const
+    -> int {
   return dir_[dir_index]->GetDepth();
 }
 
@@ -83,21 +84,48 @@ void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
 // Bucket
 //===--------------------------------------------------------------------===//
 template <typename K, typename V>
-ExtendibleHashTable<K, V>::Bucket::Bucket(size_t array_size, int depth) : size_(array_size), depth_(depth) {}
+ExtendibleHashTable<K, V>::Bucket::Bucket(size_t array_size, int depth)
+    : size_(array_size), depth_(depth) {}
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Bucket::Find(const K &key, V &value) -> bool {
-  UNREACHABLE("not implemented");
+  for (typename std::list<std::pair<K, V>>::iterator it = list_.begin();
+       it != list_.end(); ++it) {
+    if (it->first == key) {
+      value = it->second;
+      return true;
+    }
+  }
+  return false;
 }
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Bucket::Remove(const K &key) -> bool {
-  UNREACHABLE("not implemented");
+  for (typename std::list<std::pair<K, V>>::iterator it = list_.begin();
+       it != list_.end(); ++it) {
+    if (it->first == key) {
+      list_.erase(it);
+      return true;
+    }
+  }
+  return false;
 }
 
 template <typename K, typename V>
-auto ExtendibleHashTable<K, V>::Bucket::Insert(const K &key, const V &value) -> bool {
-  UNREACHABLE("not implemented");
+auto ExtendibleHashTable<K, V>::Bucket::Insert(const K &key, const V &value)
+    -> bool {
+  for (typename std::list<std::pair<K, V>>::iterator it = list_.begin();
+       it != list_.end(); ++it) {
+    if (it->first == key) {
+      it->second = value;
+      return true;
+    }
+  }
+  if (IsFull()) {
+    return false;
+  }
+  list_.push_back(std::make_pair(key, value));
+  return true;
 }
 
 template class ExtendibleHashTable<page_id_t, Page *>;
@@ -107,4 +135,4 @@ template class ExtendibleHashTable<int, int>;
 template class ExtendibleHashTable<int, std::string>;
 template class ExtendibleHashTable<int, std::list<int>::iterator>;
 
-}  // namespace bustub
+} // namespace bustub
