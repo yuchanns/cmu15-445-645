@@ -38,7 +38,7 @@ class ExtendibleHashTable : public HashTable<K, V> {
 public:
   /**
    *
-   * TODO(P1): Add implementation
+   * DONE(P1): Add implementation
    *
    * @brief Create a new ExtendibleHashTable.
    * @param bucket_size: fixed size for each bucket
@@ -67,7 +67,7 @@ public:
 
   /**
    *
-   * TODO(P1): Add implementation
+   * DONE(P1): Add implementation
    *
    * @brief Find the value associated with the given key.
    *
@@ -81,7 +81,7 @@ public:
 
   /**
    *
-   * TODO(P1): Add implementation
+   * DONE(P1): Add implementation
    *
    * @brief Insert the given key-value pair into the hash table.
    * If a key already exists, the value should be updated.
@@ -100,7 +100,7 @@ public:
 
   /**
    *
-   * TODO(P1): Add implementation
+   * DONE(P1): Add implementation
    *
    * @brief Given the key, remove the corresponding key-value pair in the hash
    * table. Shrink & Combination is not required for this project
@@ -171,7 +171,7 @@ public:
   };
 
 private:
-  // TODO(student): You may add additional private members and helper functions
+  // DONE(student): You may add additional private members and helper functions
   // and remove the ones you don't need.
 
   int global_depth_;   // The global depth of the directory
@@ -187,7 +187,33 @@ private:
    * @brief Redistribute the kv pairs in a full bucket.
    * @param bucket The bucket to be redistributed.
    */
-  auto RedistributeBucket(std::shared_ptr<Bucket> bucket) -> void;
+  auto RedistributeBucket(std::shared_ptr<Bucket> bucket) -> void {
+    num_buckets_++;
+    std::list<std::pair<K, V>> list = bucket->GetItems();
+    std::shared_ptr<Bucket> bucket_1 =
+        std::make_shared<Bucket>(bucket_size_, bucket->GetDepth());
+    std::shared_ptr<Bucket> bucket_2 =
+        std::make_shared<Bucket>(bucket_size_, bucket->GetDepth());
+    size_t index_1 = 0;
+    size_t index_2 = 0;
+    for (std::pair<K, V> it : list) {
+      size_t index = IndexOf(it.first);
+      if (index_1 == 0) {
+        index_1 = index;
+      }
+      if (index_1 == index) {
+        bucket_1->Insert(it.first, it.second);
+        if (index_2 == 0) {
+          index_2 = index_1 + bucket->GetDepth();
+        }
+        continue;
+      }
+      index_2 = index;
+      bucket_2->Insert(it.first, it.second);
+    }
+    dir_.at(index_1) = bucket_1;
+    dir_.at(index_2) = bucket_2;
+  };
 
   /*****************************************************************
    * Must acquire latch_ first before calling the below functions. *

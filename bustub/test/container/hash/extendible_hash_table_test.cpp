@@ -3,14 +3,14 @@
  */
 
 #include <memory>
-#include <thread>  // NOLINT
+#include <thread> // NOLINT
 
 #include "container/hash/extendible_hash_table.h"
 #include "gtest/gtest.h"
 
 namespace bustub {
 
-TEST(ExtendibleHashTableTest, DISABLED_SampleTest) {
+TEST(ExtendibleHashTableTest, SampleTest) {
   auto table = std::make_unique<ExtendibleHashTable<int, std::string>>(2);
 
   table->Insert(1, "a");
@@ -68,4 +68,4 @@ TEST(ExtendibleHashTableTest, DISABLED_ConcurrentInsertTest) {
   }
 }
 
-}  // namespace bustub
+} // namespace bustub

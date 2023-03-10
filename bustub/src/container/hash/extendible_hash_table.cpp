@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <functional>
 #include <list>
+#include <memory>
 #include <utility>
 
 #include "container/hash/extendible_hash_table.h"
@@ -23,7 +24,9 @@ namespace bustub {
 
 template <typename K, typename V>
 ExtendibleHashTable<K, V>::ExtendibleHashTable(size_t bucket_size)
-    : global_depth_(0), bucket_size_(bucket_size), num_buckets_(1) {}
+    : global_depth_(0), bucket_size_(bucket_size), num_buckets_(1) {
+  dir_.push_back(std::make_shared<Bucket>(bucket_size_));
+}
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::IndexOf(const K &key) -> size_t {
@@ -51,7 +54,7 @@ auto ExtendibleHashTable<K, V>::GetLocalDepth(int dir_index) const -> int {
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::GetLocalDepthInternal(int dir_index) const
     -> int {
-  return dir_[dir_index]->GetDepth();
+  return dir_.at(dir_index)->GetDepth();
 }
 
 template <typename K, typename V>
@@ -67,17 +70,38 @@ auto ExtendibleHashTable<K, V>::GetNumBucketsInternal() const -> int {
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Find(const K &key, V &value) -> bool {
-  UNREACHABLE("not implemented");
+  size_t index = IndexOf(key);
+  if (index >= dir_.size()) {
+    return false;
+  }
+  return dir_.at(index)->Find(key, value);
 }
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Remove(const K &key) -> bool {
-  UNREACHABLE("not implemented");
+  size_t index = IndexOf(key);
+  if (index >= dir_.size()) {
+    return false;
+  }
+  return dir_.at(index)->Remove(key);
 }
 
 template <typename K, typename V>
 void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
-  UNREACHABLE("not implemented");
+  std::shared_ptr<Bucket> bucket = dir_.at(IndexOf(key));
+  if (bucket->Insert(key, value)) {
+    return;
+  }
+  if (bucket->GetDepth() == global_depth_) {
+    global_depth_++;
+    dir_.reserve(dir_.size() * 2);
+    for (std::shared_ptr<Bucket> bucket : dir_) {
+      dir_.push_back(bucket);
+    }
+  }
+  bucket->IncrementDepth();
+  RedistributeBucket(bucket);
+  Insert(key, value);
 }
 
 //===--------------------------------------------------------------------===//
