@@ -70,6 +70,12 @@ auto ExtendibleHashTable<K, V>::GetNumBucketsInternal() const -> int {
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Find(const K &key, V &value) -> bool {
+  std::scoped_lock<std::mutex> lock(latch_);
+  return FindInternal(key, value);
+}
+
+template <typename K, typename V>
+auto ExtendibleHashTable<K, V>::FindInternal(const K &key, V &value) -> bool {
   size_t index = IndexOf(key);
   if (index >= dir_.size()) {
     return false;
@@ -79,6 +85,12 @@ auto ExtendibleHashTable<K, V>::Find(const K &key, V &value) -> bool {
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Remove(const K &key) -> bool {
+  std::scoped_lock<std::mutex> lock(latch_);
+  return RemoveInternal(key);
+}
+
+template <typename K, typename V>
+auto ExtendibleHashTable<K, V>::RemoveInternal(const K &key) -> bool {
   size_t index = IndexOf(key);
   if (index >= dir_.size()) {
     return false;
@@ -88,7 +100,14 @@ auto ExtendibleHashTable<K, V>::Remove(const K &key) -> bool {
 
 template <typename K, typename V>
 void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
-  std::shared_ptr<Bucket> bucket = dir_.at(IndexOf(key));
+  std::scoped_lock<std::mutex> lock(latch_);
+  return InsertInternal(key, value);
+}
+
+template <typename K, typename V>
+void ExtendibleHashTable<K, V>::InsertInternal(const K &key, const V &value) {
+  size_t index = IndexOf(key);
+  std::shared_ptr<Bucket> bucket = dir_.at(index);
   if (bucket->Insert(key, value)) {
     return;
   }
@@ -100,8 +119,8 @@ void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
     }
   }
   bucket->IncrementDepth();
-  RedistributeBucket(bucket);
-  Insert(key, value);
+  RedistributeBucket(bucket, index);
+  InsertInternal(key, value);
 }
 
 //===--------------------------------------------------------------------===//

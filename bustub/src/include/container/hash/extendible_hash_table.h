@@ -180,6 +180,10 @@ private:
   mutable std::mutex latch_;
   std::vector<std::shared_ptr<Bucket>> dir_; // The directory of the hash table
 
+  auto FindInternal(const K &key, V &value) -> bool;
+  auto RemoveInternal(const K &key) -> bool;
+  void InsertInternal(const K &key, const V &value);
+
   // The following functions are completely optional, you can delete them if you
   // have your own ideas.
 
@@ -187,32 +191,23 @@ private:
    * @brief Redistribute the kv pairs in a full bucket.
    * @param bucket The bucket to be redistributed.
    */
-  auto RedistributeBucket(std::shared_ptr<Bucket> bucket) -> void {
+  auto RedistributeBucket(std::shared_ptr<Bucket> bucket, size_t index)
+      -> void {
     num_buckets_++;
     std::list<std::pair<K, V>> list = bucket->GetItems();
-    std::shared_ptr<Bucket> bucket_1 =
+    std::shared_ptr<Bucket> split_bucket =
         std::make_shared<Bucket>(bucket_size_, bucket->GetDepth());
-    std::shared_ptr<Bucket> bucket_2 =
-        std::make_shared<Bucket>(bucket_size_, bucket->GetDepth());
-    size_t index_1 = 0;
-    size_t index_2 = 0;
+    size_t split_index = index + bucket->GetDepth();
     for (std::pair<K, V> it : list) {
-      size_t index = IndexOf(it.first);
-      if (index_1 == 0) {
-        index_1 = index;
-      }
-      if (index_1 == index) {
-        bucket_1->Insert(it.first, it.second);
-        if (index_2 == 0) {
-          index_2 = index_1 + bucket->GetDepth();
-        }
+      size_t new_index = IndexOf(it.first);
+      if (new_index == index) {
         continue;
       }
-      index_2 = index;
-      bucket_2->Insert(it.first, it.second);
+      split_index = new_index;
+      bucket->Remove(it.first);
+      split_bucket->Insert(it.first, it.second);
     }
-    dir_.at(index_1) = bucket_1;
-    dir_.at(index_2) = bucket_2;
+    dir_.at(split_index) = split_bucket;
   };
 
   /*****************************************************************
