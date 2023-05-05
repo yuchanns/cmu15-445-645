@@ -172,18 +172,14 @@ private:
     if (!FindInternal(frame_id, index)) {
       return;
     }
-    if (!frames_[index].evictable) {
-      BUSTUB_ASSERT(index > 0, "frame_id is non-evictable");
-    }
+    BUSTUB_ASSERT(frames_[index].evictable, "frame_id is non-evictable");
     frames_.erase(frames_.begin() + index);
     curr_size_--;
   }
 
   void SetEvictableInternal(frame_id_t frame_id, bool set_evictable) {
     size_t index = 0;
-    if (!FindInternal(frame_id, index)) {
-      BUSTUB_ASSERT(index != 0, "frame_id is invalid");
-    }
+    BUSTUB_ASSERT(FindInternal(frame_id, index), "frame_id is invalid");
     if (!frames_[index].evictable && set_evictable) {
       curr_size_++;
     } else if (frames_[index].evictable && !set_evictable) {
