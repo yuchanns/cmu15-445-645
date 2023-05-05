@@ -192,7 +192,8 @@ private:
     current_timestamp_++;
     size_t index = 0;
     if (!FindInternal(frame_id, index)) {
-      BUSTUB_ASSERT(frames_.size() < replacer_size_, "frame_id is invalid");
+      BUSTUB_ASSERT(frames_.size() < replacer_size_,
+                    "frame size exceeds the limit");
 
       frames_.push_back(FrameInfo{frame_id, std::vector<size_t>(), false});
       index = frames_.size() - 1;
