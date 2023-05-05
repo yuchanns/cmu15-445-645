@@ -202,7 +202,7 @@ private:
 
   auto EvictInternal(frame_id_t *frame_id) -> bool {
     current_timestamp_++;
-    size_t timestamp = 0;
+    size_t distance = 0;
     bool found = false;
     for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
       if (!it->evictable) {
@@ -210,11 +210,11 @@ private:
       }
       found = true;
       if (it->accesses.size() < k_) {
-        timestamp = SIZE_MAX;
+        distance = SIZE_MAX;
         *frame_id = it->frame_id;
       } else if (current_timestamp_ - it->accesses[it->accesses.size() - k_] >
-                 timestamp) {
-        timestamp = current_timestamp_ - it->accesses[k_ - 1];
+                 distance) {
+        distance = current_timestamp_ - it->accesses[k_ - 1];
         *frame_id = it->frame_id;
       }
     }
