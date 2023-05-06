@@ -41,6 +41,9 @@ void LRUKReplacer::Remove(frame_id_t frame_id) {
   RemoveInternal(frame_id);
 }
 
-auto LRUKReplacer::Size() -> size_t { return curr_size_; }
+auto LRUKReplacer::Size() -> size_t {
+  std::scoped_lock<std::mutex> lock(latch_);
+  return SizeInternal();
+}
 
 } // namespace bustub

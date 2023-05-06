@@ -167,6 +167,8 @@ private:
     return false;
   }
 
+  auto SizeInternal() -> size_t { return curr_size_; }
+
   void RemoveInternal(frame_id_t frame_id) {
     size_t index;
     if (!FindInternal(frame_id, index)) {
