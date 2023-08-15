@@ -111,14 +111,6 @@ void ExtendibleHashTable<K, V>::InsertInternal(const K &key, const V &value) {
   if (bucket->Insert(key, value)) {
     return;
   }
-  if (bucket->GetDepth() == global_depth_) {
-    global_depth_++;
-    dir_.reserve(dir_.size() * 2);
-    for (std::shared_ptr<Bucket> bucket : dir_) {
-      dir_.push_back(bucket);
-    }
-  }
-  bucket->IncrementDepth();
   RedistributeBucket(bucket, index);
   InsertInternal(key, value);
 }

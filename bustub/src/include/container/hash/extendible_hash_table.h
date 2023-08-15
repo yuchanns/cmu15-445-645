@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <list>
 #include <memory>
 #include <mutex> // NOLINT
@@ -193,6 +194,13 @@ private:
    */
   auto RedistributeBucket(std::shared_ptr<Bucket> bucket, size_t index)
       -> void {
+    if (bucket->GetDepth() == global_depth_) {
+      global_depth_++;
+      auto size = dir_.size();
+      dir_.resize(size * 2);
+      std::copy_n(dir_.begin(), size, dir_.begin() + size);
+    }
+    bucket->IncrementDepth();
     num_buckets_++;
     std::list<std::pair<K, V>> list = bucket->GetItems();
     std::shared_ptr<Bucket> split_bucket =
